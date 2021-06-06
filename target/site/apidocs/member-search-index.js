@@ -1,1 +1,0 @@
-memberSearchIndex = [{"p":"cz.stv.neurondemofx","c":"App","l":"App()","url":"%3Cinit%3E()"},{"p":"cz.stv.neurondemofx","c":"App","l":"main(String[])","url":"main(java.lang.String[])"},{"p":"cz.stv.neurondemofx","c":"App","l":"start(Stage)","url":"start(javafx.stage.Stage)"}]
