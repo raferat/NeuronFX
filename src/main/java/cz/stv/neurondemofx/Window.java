@@ -22,12 +22,34 @@ import javafx.stage.Stage;
 public class Window extends Application
 {
 
+  /**
+   * height of matrix
+   */
   private static final int MATRIX_HEIGHT = 32;
+  
+  /**
+   * width of matrix
+   */
   private static final int MATRIX_WIDTH = 32;
 
+  /**
+   * scale of canvas
+   * @see canvas
+   */
   private static final double CANVAS_SCALE = 20d;
 
+  /**
+   * width of canvas 
+   * @see MATRIX_WIDTH
+   * @see CANVAS_SCALE
+   */
   private static final double CANVAS_WIDTH = MATRIX_WIDTH * CANVAS_SCALE;
+  
+  /**
+   * height of canvas 
+   * @see MATRIX_HEIGHT
+   * @see CANVAS_SCALE
+   */
   private static final double CANVAS_HEIGHT = MATRIX_HEIGHT * CANVAS_SCALE;
 
   /**
@@ -35,26 +57,41 @@ public class Window extends Application
    * @see inputMatrix
    * 
    */
-  
   private Canvas canvas;
   
   /**
    * graphicsContext is context of canvas.
    * @see canvas
    */
-  
   private GraphicsContext graphicsContext;
 
+  /**
+   * boolean that indicates if draw method should draw.
+   * @see draw
+   * @see drawMoreEfficient
+   * @see startPainting
+   * @see stopPainting
+   */
   private boolean isPainting = false;
+  
+  /**
+   * boolean that indicates if mouse is out for method draw.
+   * @see draw
+   * @see drawMoreEfficient
+   * @see entered
+   * @see exited
+   */
   private boolean isOut = false;
 
   /**
    * inputMatrix is given to Neural Network as input
    * @see cz.stv.neuronnetwork
    */
-  
   private boolean inputMatrix[][] = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
 
+  /**
+   * int that indicate last coordinate of mouse.
+   */
   private int lastMouseX, lastMouseY;
 
 //===================================================================================================================================================
