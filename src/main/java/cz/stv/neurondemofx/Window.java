@@ -1,7 +1,7 @@
 package cz.stv.neurondemofx;
 
 
-import cz.stv.neuronnetwork.InputMartixNullPointerException;
+//import cz.stv.neuronnetwork.InputMartixNullPointerException;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -15,7 +15,7 @@ import javafx.stage.Stage;
 
 
 /**
- * JavaFX Window <code>Window</code>
+ * JavaFX <code style="color:blue">Window</code>
  *
  * @author Raferat
  */
@@ -30,21 +30,43 @@ public class Window extends Application
   private static final double CANVAS_WIDTH = MATRIX_WIDTH * CANVAS_SCALE;
   private static final double CANVAS_HEIGHT = MATRIX_HEIGHT * CANVAS_SCALE;
 
+  /**
+   * Canvas on which is showing <code>inputMatrix</code>
+   * @see inputMatrix
+   * 
+   */
+  
   private Canvas canvas;
+  
+  /**
+   * graphicsContext is context of canvas.
+   * @see canvas
+   */
+  
   private GraphicsContext graphicsContext;
 
   private boolean isPainting = false;
   private boolean isOut = false;
 
+  /**
+   * inputMatrix is given to Neural Network as input
+   * @see cz.stv.neuronnetwork
+   */
+  
   private boolean inputMatrix[][] = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
 
   private int lastMouseX, lastMouseY;
 
-//===================================================================================================================================================  
+//===================================================================================================================================================
+  /**
+   * <code>initScene</code> is initializing the scene.
+   * @param stage is current window's stage
+   * @see javafx.stage
+   */
   private void initScene(Stage stage)
   {
     Scene scene = new Scene(new StackPane(canvas));
-    scene.setOnKeyPressed((event) -> pressed(event));
+    scene.setOnKeyPressed(this :: pressed);
 
     stage.setResizable(false);
     stage.setScene(scene);
@@ -53,6 +75,11 @@ public class Window extends Application
   }
 
 //------------------------------------------------------------------------------
+  /**
+   * <code>initCanvas</code> is initializing the canvas.
+   * @see canvas
+   * @see javafx.scene.canvas.Canvas
+   */
   private void initCanvas()
   {
     //initializing canvas
@@ -60,28 +87,28 @@ public class Window extends Application
     graphicsContext = canvas.getGraphicsContext2D();
 
     //setting up listeners
-    canvas.setOnMousePressed((event) -> startPainting());
-    canvas.setOnMouseReleased((event) -> stopPainting());
-    canvas.setOnMouseDragged((event) -> drawEfficient(event));
-    canvas.setOnMouseExited((event) -> exited());
-    canvas.setOnMouseEntered((event) -> entered());
+    canvas.setOnMousePressed(this :: startPainting);
+    canvas.setOnMouseReleased(this :: stopPainting);
+    canvas.setOnMouseDragged(this :: drawMoreEfficient);
+    canvas.setOnMouseExited(this :: exited);
+    canvas.setOnMouseEntered(this :: entered);
   }
 
 //===================================================================================================================================================  
-  private void startPainting()
+  private void startPainting(MouseEvent event)
   {
     isPainting = true;
   }
 
 //------------------------------------------------------------------------------
-  private void stopPainting()
+  private void stopPainting(MouseEvent event)
   {
     isPainting = false;
     isOut = false;
   }
 
 //------------------------------------------------------------------------------
-  private void exited()
+  private void exited(MouseEvent event)
   {
     if (isPainting)
     {
@@ -91,7 +118,7 @@ public class Window extends Application
   }
 
 //------------------------------------------------------------------------------
-  private void entered()
+  private void entered(MouseEvent event)
   {
     if (isOut)
     {
@@ -128,7 +155,7 @@ public class Window extends Application
 
   }
 
-  private void drawEfficient(MouseEvent event)
+  private void drawMoreEfficient(MouseEvent event)
   {
     if (lastMouseX == (int) event.getX() / CANVAS_SCALE)
     {
