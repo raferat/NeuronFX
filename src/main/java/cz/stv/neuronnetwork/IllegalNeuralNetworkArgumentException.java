@@ -19,13 +19,12 @@ package cz.stv.neuronnetwork;
  *
  * @author martin
  */
-public class InputMartixNullPointerException extends NullPointerException
+public class IllegalNeuralNetworkArgumentException extends MatrixException
 {
-  public InputMartixNullPointerException()
-  {
-    //super( "Input martix is null", new NullPointerException());
-    super("Input martix is null");
-  }
   
+  public IllegalNeuralNetworkArgumentException(String message)
+  {
+    super(message);
+  }
   
 }
