@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.stv.neuronnetwork;
+package cz.stv.neuronnetworkfromnet;
 
 /**
  *
  * @author martin
  */
-public class MatrixException extends RuntimeException
+public class IllegalNeuralNetworkArgumentException extends MatrixException
 {
-  public MatrixException(String message)
+  
+  public IllegalNeuralNetworkArgumentException(String message)
   {
     super(message);
   }

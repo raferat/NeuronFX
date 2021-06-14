@@ -1,4 +1,4 @@
-package cz.stv.neuronnetwork;
+package cz.stv.neuronnetworkfromnet;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import cz.stv.neuronnetwork.Matrix.MatFunc;
+import cz.stv.neuronnetworkfromnet.Matrix.MatFunc;
 
 /**
  * This class is used to create new Neural Networks, configure them

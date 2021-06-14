@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.stv.neurondemofx;
+package cz.stv.neurondemofx.archive;
 
 
 import javafx.geometry.Pos;

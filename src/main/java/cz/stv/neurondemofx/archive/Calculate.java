@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.stv.neurondemofx;
+package cz.stv.neurondemofx.archive;
 
 
-import cz.stv.neuronnetwork.Matrix;
-import cz.stv.neuronnetwork.MatrixException;
-import cz.stv.neuronnetwork.NeuralNetwork;
+import cz.stv.neuronnetworkfromnet.Matrix;
+import cz.stv.neuronnetworkfromnet.MatrixException;
+import cz.stv.neuronnetworkfromnet.NeuralNetwork;
 import java.io.File;
 import java.util.Arrays;
 

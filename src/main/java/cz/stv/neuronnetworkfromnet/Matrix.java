@@ -1,5 +1,5 @@
 
-package cz.stv.neuronnetwork;
+package cz.stv.neuronnetworkfromnet;
 
 import java.io.Serializable;
 import java.util.Arrays;

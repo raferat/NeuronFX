@@ -4,9 +4,11 @@ package cz.stv.neurondemofx;
 import javafx.application.Application;
 
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 
 import javafx.scene.Scene;
 
@@ -14,6 +16,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 import javafx.scene.input.KeyEvent;
@@ -21,6 +24,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
@@ -40,12 +44,12 @@ public class Window extends Application
   /**
    * height of matrix
    */
-  private static final int MATRIX_HEIGHT = 64;
+  private static final int MATRIX_HEIGHT = 60;
 
   /**
    * width of matrix
    */
-  private static final int MATRIX_WIDTH = 64;
+  private static final int MATRIX_WIDTH = 60;
 
   /**
    * scale of canvas
@@ -113,22 +117,30 @@ public class Window extends Application
    *
    * @see cz.stv.neuronnetwork
    */
-  private boolean inputMatrix[][] = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
+  private final Image image = new Image(MATRIX_WIDTH,MATRIX_HEIGHT);
+  
+  private byte currentColor = 1;
+  
+  private boolean[][] inputMatrix = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
 
   /**
    * int that indicate last coordinate of mouse.
    */
   private int lastMouseX, lastMouseY;
 
-  private double treshold = 0.1d;
-  
-  private TextView text;
-
-  private Calculate calculate;
   private Scene scene;
   private Stage stage;
-  private TextView output;
-
+  
+  private final Button buttonNext = new Button("<");
+  private final Button buttonBack = new Button(">");
+  
+  private final Button buttonErase = new Button("Erase");
+  private final Button buttonOpen = new Button("Open");
+  private final Button buttonSave = new Button("Save");
+  
+  
+  private final Label status = new Label("1/1");
+  
 //===================================================================================================================================================
   /**
    * <code>initScene</code> is initializing the scene.
@@ -138,7 +150,7 @@ public class Window extends Application
    */
   private void initScene(Stage stage)
   {
-    scene = new Scene(new VBox(initCanvas() , initTextEdit() , initMessages()));
+    scene = new Scene(new VBox(initCanvas(), initToolbar()));
     scene.setOnKeyPressed(this::pressed);
     scene.getRoot().setStyle("-fx-background-color: white");
 
@@ -147,6 +159,34 @@ public class Window extends Application
     stage.setScene(scene);
     stage.setTitle("Neuron FX");
     stage.show();
+  }
+
+  private HBox initToolbar ()
+  {
+    HBox hBox = new HBox(10d, buttonNext , status , buttonErase , buttonOpen , buttonSave , buttonBack );
+    hBox.setAlignment( Pos.CENTER );
+    ObservableList<Node> content = hBox . getChildren();
+    double buttonWidth = (canvas.getWidth() - hBox.getSpacing() * (content.size()-1) ) / content.size();
+    
+    for ( Node node : content )
+    {
+      if ( node instanceof Button )
+      {
+        Button tmp = (Button) node;
+        tmp.setPrefSize( buttonWidth, 50d);
+      }
+      else if ( node instanceof Label)
+      {
+        Label tmp = (Label) node;
+        tmp.setPrefSize( buttonWidth , 50d);
+        tmp.setFont( new Font(20d));
+        tmp.setAlignment( Pos.CENTER );
+      }
+    }
+    
+    buttonErase . setOnAction( this::erase);
+    
+    return hBox;
   }
 
 //------------------------------------------------------------------------------
@@ -171,146 +211,9 @@ public class Window extends Application
     
     return canvas;
   }
-  
-//------------------------------------------------------------------------------
-  
-  private HBox initMessages()
-  {
-    double textViewWidth = CANVAS_WIDTH / 2;
-    double textViewHeight = 10;
-    text = new TextView("Please fill the textfield");
-    text.setPrefSize(textViewWidth, textViewHeight);
-    text.setStyle("-fx-text-fill: red;"+ text.getStyle());
-    text.setVisible(false);
-    
-    output = new TextView("Output: ");
-    output.setPrefSize(textViewWidth, textViewHeight);
-    
-    return new HBox(text , output);
-  }
-
-//------------------------------------------------------------------------------
-  
-  private HBox initTextEdit()
-  {
-    HBox hbox = new HBox(2d);
-    //------------
-    // button part
-    
-    double buttonWidth = CANVAS_WIDTH / 7;
-    Button[] buttons ={new Button("GO"),new Button("STOP"),new Button("SET")};
-    buttons[0].setOnAction(this::startNeuralNetwork);
-    buttons[1].setOnAction(this::stopButtonAction);
-    buttons[2].setOnAction(this::setTreshold);
-    
-    for ( Button btn : buttons )
-      btn.setPrefWidth(buttonWidth);
-    
-    //-------------
-    //textfield part part
-    
-    double textWidth = (CANVAS_WIDTH - buttonWidth * buttons.length) / 2;
-    correct = new TextField();
-    correct.setPrefWidth(textWidth);
-    correct.textProperty().addListener(this::textFormatterCorrect);
-    
-    
-    
-    tresholdInput = new TextField("" + treshold);
-    tresholdInput . setPrefWidth(textWidth);
-    tresholdInput.textProperty().addListener(this::textFormatterTreshold);
-    
-    
-    
-    
-
-    hbox.getChildren().addAll(correct , buttons[0] , buttons[1] , tresholdInput , buttons[2]);
-
-    return hbox;
-  }
-  
-//===================================================================================================================================================
-  
-  void setTreshold(ActionEvent event)
-  {
-    try
-    {
-      treshold = Double.parseDouble(tresholdInput.getText());
-      calculate.setTreshold(treshold);
-      text.setVisible(false);
-    }
-    catch (NumberFormatException ex)
-    {
-      text.setVisible(true);
-    }
-  }
-  
-//------------------------------------------------------------------------------
-  
-  private void stopButtonAction( ActionEvent event )
-  {
-    if (calculate != null && calculate.isAlive())
-    {
-      try
-      {
-        calculate.cancel();
-      }
-      catch (InterruptedException ex)
-      {
-        ex.printStackTrace(System.err);
-      }
-    }
-  }
-
-//------------------------------------------------------------------------------
-  
-  private void startNeuralNetwork(ActionEvent event)
-  {
-    try
-    {
-      
-      calculate.cancel();
-      calculate = new Calculate(true);
-      
-      calculate.process(MATRIX_WIDTH , MATRIX_HEIGHT , inputMatrix , treshold , Integer.parseInt(correct.getText()));
-      calculate.start();
-      text.setVisible(false);
-      
-    }
-    catch (InterruptedException ex)
-    {
-      ex.printStackTrace(System.err);
-    }
-    catch (NumberFormatException exception)
-    {
-      text.setVisible(true);
-    }
-  }
-
-//===================================================================================================================================================
-  
-  private void textFormatterCorrect(final ObservableValue<? extends String> ov , final String oldValue , final String newValue)
-  {
-    String answer = newValue;
-    if (correct.getText().length() > 1)
-    {
-      answer = oldValue;
-    }
-    if ( ! answer . matches("[0123456789]"))
-      answer = answer . replaceAll ( "[^0123456789]" , "" );
-    
-    correct.setText(answer);
-  }
-
-//------------------------------------------------------------------------------
-    
-  private void textFormatterTreshold(final ObservableValue<? extends String> ov , final String oldValue , final String newValue)
-  {
-    if ( ! newValue . matches("[0123456789.]"))
-      tresholdInput . setText ( newValue . replaceAll ( "[^0123456789.]" , "" ));
-  }
 
 //===================================================================================================================================================  
+  
   private void startPainting(MouseEvent event)
   {
     isPainting = true;
@@ -349,30 +252,27 @@ public class Window extends Application
     KeyCode key = event.getCode();
     if (key == KeyCode.C)
     {
-      graphicsContext.setFill(Color.WHITE);
-      graphicsContext.fillRect(0 , 0 , CANVAS_WIDTH , CANVAS_HEIGHT);
-      inputMatrix = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
+      erase();
     }
 
   }
+//------------------------------------------------------------------------------
+  
+  private void erase(ActionEvent event)
+  {
+    erase();
+  }
+  
+//------------------------------------------------------------------------------
+  private void erase ()
+  {
+    graphicsContext.setFill(Color.WHITE);
+    graphicsContext.fillRect(0 , 0 , CANVAS_WIDTH , CANVAS_HEIGHT);
+    inputMatrix = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
+  }
+  
 
 //===================================================================================================================================================
-  private void draw(MouseEvent event)
-  {
-    if (isPainting)
-    {
-      int x = (int) (event.getX() / CANVAS_SCALE);
-      int y = (int) (event.getY() / CANVAS_SCALE);
-
-      inputMatrix[x][y] = true;
-
-      graphicsContext.setFill(Color.BLACK);
-      graphicsContext.fillRect(x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE);
-
-    }
-
-  }
-
   private void drawMoreEfficient(MouseEvent event)
   {
     if (lastMouseX == (int) event.getX() / CANVAS_SCALE)
@@ -393,6 +293,11 @@ public class Window extends Application
       {
 
         inputMatrix[x][y] = true;
+        
+        image.draw( (byte[][] matrix)->
+        {
+          matrix[x][y] = currentColor;
+        });
 
         graphicsContext.setFill(Color.BLACK);
         graphicsContext.fillRect(x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE);
@@ -405,18 +310,6 @@ public class Window extends Application
   }
 
 //===================================================================================================================================================  
-  
-  public void setOutputText(String str)
-  {
-    output.setText(str);
-  }
-  
-  public String getOutputText ()
-  {
-    return output.getText();
-  }
-  
-//===================================================================================================================================================  
   /**
    * Start method is called by JavaFX
    *
@@ -425,24 +318,8 @@ public class Window extends Application
   @Override
   public void start(Stage stage)
   {
-    calculate = new Calculate(true);
     this.stage = stage;
     initScene(stage);
-    
-    stage.setOnCloseRequest((event) ->
-    {
-      try
-      {
-        if (calculate . isAlive())
-        {
-          calculate.cancel();
-        }
-      }
-      catch (InterruptedException ex)
-      {
-        ex.printStackTrace(System.err);
-      }
-    });
   }
 
 //===================================================================================================================================================
