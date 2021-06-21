@@ -18,7 +18,6 @@ package cz.stv.neurondemofx;
 
 import java.io.Reader;
 import java.io.Writer;
-import javafx.scene.canvas.Canvas;
 
 
 /**
@@ -73,5 +72,6 @@ public class Image
   public void draw(ImageDrawable imageDrawable)
   {
     imageDrawable.draw(matrix);
+    
   }
 }

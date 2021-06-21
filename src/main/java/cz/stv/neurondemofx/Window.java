@@ -3,7 +3,6 @@ package cz.stv.neurondemofx;
 
 import javafx.application.Application;
 
-import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 
 import javafx.event.ActionEvent;
@@ -24,7 +23,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import javafx.scene.paint.Color;
@@ -77,12 +75,6 @@ public class Window extends Application
   private TextField correct;
   private TextField tresholdInput;
 
-  /**
-   * Canvas on which is showing <code>inputMatrix</code>
-   *
-   * @see inputMatrix
-   *
-   */
   private Canvas canvas;
 
   /**
@@ -112,35 +104,27 @@ public class Window extends Application
    */
   private boolean isOut = false;
 
-  /**
-   * inputMatrix is given to Neural Network as input
-   *
-   * @see cz.stv.neuronnetwork
-   */
-  private final Image image = new Image(MATRIX_WIDTH,MATRIX_HEIGHT);
-  
+  private final ImageList imageList = new ImageList( MATRIX_WIDTH , MATRIX_HEIGHT );
+
   private byte currentColor = 1;
-  
-  private boolean[][] inputMatrix = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
 
   /**
    * int that indicate last coordinate of mouse.
    */
-  private int lastMouseX, lastMouseY;
-
   private Scene scene;
   private Stage stage;
-  
-  private final Button buttonNext = new Button("<");
-  private final Button buttonBack = new Button(">");
-  
-  private final Button buttonErase = new Button("Erase");
-  private final Button buttonOpen = new Button("Open");
-  private final Button buttonSave = new Button("Save");
-  
-  
-  private final Label status = new Label("1/1");
-  
+
+  private final Button buttonNext = new Button( "<" );
+  private final Button buttonBack = new Button( ">" );
+
+  private final Button buttonErase = new Button( "Erase" );
+  private final Button buttonLoad = new Button( "Open" );
+  private final Button buttonSave = new Button( "Save" );
+  private final Button buttonAdd = new Button( "Add" );
+  private final Button buttonRemove = new Button( "Remove" );
+
+  private final Label status = new Label( "1/1" );
+
 //===================================================================================================================================================
   /**
    * <code>initScene</code> is initializing the scene.
@@ -148,44 +132,43 @@ public class Window extends Application
    * @param stage is current window's stage
    * @see javafx.stage
    */
-  private void initScene(Stage stage)
+  private void initScene ( Stage stage )
   {
-    scene = new Scene(new VBox(initCanvas(), initToolbar()));
-    scene.setOnKeyPressed(this::pressed);
-    scene.getRoot().setStyle("-fx-background-color: white");
+    scene = new Scene( new VBox( initCanvas() , initToolbar() ) );
+    scene.setOnKeyPressed( this :: pressed );
+    scene.getRoot().setStyle( "-fx-background-color: white" );
 
-    scene . getRoot().requestFocus();
-    stage.setResizable(false);
-    stage.setScene(scene);
-    stage.setTitle("Neuron FX");
+    scene.getRoot().requestFocus();
+    stage.setResizable( false );
+    stage.setScene( scene );
+    stage.setTitle( "Neuron FX" );
     stage.show();
   }
 
   private HBox initToolbar ()
   {
-    HBox hBox = new HBox(10d, buttonNext , status , buttonErase , buttonOpen , buttonSave , buttonBack );
+    initButtons();
+    HBox hBox = new HBox( 10d , buttonNext , status , buttonAdd , buttonRemove , buttonErase , buttonLoad , buttonSave , buttonBack );
     hBox.setAlignment( Pos.CENTER );
-    ObservableList<Node> content = hBox . getChildren();
-    double buttonWidth = (canvas.getWidth() - hBox.getSpacing() * (content.size()-1) ) / content.size();
-    
+    ObservableList<Node> content = hBox.getChildren();
+    double buttonWidth = ( canvas.getWidth() - hBox.getSpacing() * ( content.size() - 1 ) ) / content.size();
+
     for ( Node node : content )
     {
       if ( node instanceof Button )
       {
-        Button tmp = (Button) node;
-        tmp.setPrefSize( buttonWidth, 50d);
+        Button tmp = ( Button ) node;
+        tmp.setPrefSize( buttonWidth , 50d );
       }
-      else if ( node instanceof Label)
+      else if ( node instanceof Label )
       {
-        Label tmp = (Label) node;
-        tmp.setPrefSize( buttonWidth , 50d);
-        tmp.setFont( new Font(20d));
+        Label tmp = ( Label ) node;
+        tmp.setPrefSize( buttonWidth , 50d );
+        tmp.setFont( new Font( 20d ) );
         tmp.setAlignment( Pos.CENTER );
       }
     }
-    
-    buttonErase . setOnAction( this::erase);
-    
+
     return hBox;
   }
 
@@ -196,41 +179,90 @@ public class Window extends Application
    * @see canvas
    * @see javafx.scene.canvas.Canvas
    */
-  private Canvas initCanvas()
+  private Canvas initCanvas ()
   {
     //initializing canvas
-    canvas = new Canvas(CANVAS_WIDTH , CANVAS_HEIGHT);
+    canvas = new Canvas( CANVAS_WIDTH , CANVAS_HEIGHT );
     graphicsContext = canvas.getGraphicsContext2D();
 
     //setting up listeners
-    canvas.setOnMousePressed(this::startPainting);
-    canvas.setOnMouseReleased(this::stopPainting);
-    canvas.setOnMouseDragged(this::drawMoreEfficient);
-    canvas.setOnMouseExited(this::exited);
-    canvas.setOnMouseEntered(this::entered);
-    
+    canvas.setOnMousePressed( this :: startPainting );
+    canvas.setOnMouseReleased( this :: stopPainting );
+    canvas.setOnMouseDragged( this :: drawMoreEfficient );
+    canvas.setOnMouseExited( this :: exited );
+    canvas.setOnMouseEntered( this :: entered );
+
     return canvas;
   }
 
+  private void initButtons ()
+  {
+    buttonErase.setOnAction( ( e ) ->
+    {
+      imageList.current().erase();
+      updateLabel();
+      repaintEfficient();
+    } );
+    buttonNext.setOnAction( ( e ) ->
+    {
+      imageList.next();
+      updateLabel();
+      repaintEfficient();
+    } );
+    buttonBack.setOnAction( ( e ) ->
+    {
+      imageList.back();
+      updateLabel();
+      repaintEfficient();
+    } );
+
+    buttonSave.setOnAction( ( e ) ->
+    {
+      imageList.save( "C://Temp/image.txt" );
+      updateLabel();
+      repaintEfficient();
+    } );
+
+    buttonLoad.setOnAction( ( e ) ->
+    {
+      imageList.load( "C://Temp/image.txt" );
+      updateLabel();
+      repaintEfficient();
+    } );
+
+    buttonAdd.setOnAction( ( e ) ->
+    {
+      imageList.add();
+      updateLabel();
+      repaintEfficient();
+    } );
+
+    buttonRemove.setOnAction( ( e ) ->
+    {
+      imageList.delete();
+      updateLabel();
+      repaintEfficient();
+    } );
+  }
+
 //===================================================================================================================================================  
-  
-  private void startPainting(MouseEvent event)
+  private void startPainting ( MouseEvent event )
   {
     isPainting = true;
     scene.getRoot().requestFocus();
   }
 
 //------------------------------------------------------------------------------
-  private void stopPainting(MouseEvent event)
+  private void stopPainting ( MouseEvent event )
   {
     isPainting = false;
     isOut = false;
   }
 
 //------------------------------------------------------------------------------
-  private void exited(MouseEvent event)
+  private void exited ( MouseEvent event )
   {
-    if (isPainting)
+    if ( isPainting )
     {
       isPainting = false;
       isOut = true;
@@ -238,75 +270,87 @@ public class Window extends Application
   }
 
 //------------------------------------------------------------------------------
-  private void entered(MouseEvent event)
+  private void entered ( MouseEvent event )
   {
-    if (isOut)
+    if ( isOut )
     {
       isPainting = true;
     }
   }
 
 //------------------------------------------------------------------------------  
-  private void pressed(KeyEvent event)
+  private void updateLabel ()
+  {
+    String s = String.format( "%d/%d" , imageList.position() , imageList.size() );
+
+    status.setText( s );
+  }
+
+//------------------------------------------------------------------------------
+  private void pressed ( KeyEvent event )
   {
     KeyCode key = event.getCode();
-    if (key == KeyCode.C)
+    if ( key == KeyCode.C )
     {
-      erase();
+      imageList.current().erase();
+      repaintEfficient();
+      updateLabel();
     }
 
   }
-//------------------------------------------------------------------------------
-  
-  private void erase(ActionEvent event)
-  {
-    erase();
-  }
-  
-//------------------------------------------------------------------------------
-  private void erase ()
-  {
-    graphicsContext.setFill(Color.WHITE);
-    graphicsContext.fillRect(0 , 0 , CANVAS_WIDTH , CANVAS_HEIGHT);
-    inputMatrix = new boolean[MATRIX_WIDTH][MATRIX_HEIGHT];
-  }
-  
-
 //===================================================================================================================================================
-  private void drawMoreEfficient(MouseEvent event)
+
+  private void drawMoreEfficient ( MouseEvent event )
   {
-    if (lastMouseX == (int) event.getX() / CANVAS_SCALE)
+    if ( isPainting )
     {
-      return;
-    }
-    if (lastMouseY == (int) event.getY() / CANVAS_SCALE)
-    {
-      return;
-    }
+      int xDraw = ( int ) ( event.getX() / CANVAS_SCALE );
+      int yDraw = ( int ) ( event.getY() / CANVAS_SCALE );
 
-    if (isPainting)
-    {
-      int x = (int) (event.getX() / CANVAS_SCALE);
-      int y = (int) (event.getY() / CANVAS_SCALE);
-
-      if (inputMatrix[x][y] == false)
+      imageList.current().draw( ( byte[][] matrix ) ->
       {
+        matrix[ xDraw ][ yDraw ] = currentColor;
+        graphicsContext.setFill( Color.WHITE );
+        graphicsContext.fillRect( 0 , 0 , MATRIX_WIDTH * CANVAS_SCALE , MATRIX_HEIGHT * CANVAS_SCALE );
+        graphicsContext.setFill( Color.BLACK );
 
-        inputMatrix[x][y] = true;
-        
-        image.draw( (byte[][] matrix)->
+        for ( int x = 0 ; x < matrix.length ; x ++ )
         {
-          matrix[x][y] = currentColor;
-        });
+          for ( int y = 0 ; y < matrix[ x ].length ; y ++ )
+          {
+            if ( matrix[ x ][ y ] != 0 )
+            {
 
-        graphicsContext.setFill(Color.BLACK);
-        graphicsContext.fillRect(x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE);
+              graphicsContext.fillRect( x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE );
+            }
+          }
+        }
 
-      }
-      lastMouseX = x;
-      lastMouseY = y;
-
+      } );
     }
+  }
+
+  private void repaintEfficient ()
+  {
+    imageList.current().draw( ( byte[][] matrix ) ->
+    {
+      graphicsContext.setFill( Color.WHITE );
+      graphicsContext.fillRect( 0 , 0 , MATRIX_WIDTH * CANVAS_SCALE , MATRIX_HEIGHT * CANVAS_SCALE );
+      graphicsContext.setFill( Color.BLACK );
+      
+      for ( int x = 0 ; x < matrix.length ; x ++ )
+      {
+        for ( int y = 0 ; y < matrix[ x ].length ; y ++ )
+        {
+          if ( matrix[ x ][ y ] != 0 )
+          {
+            graphicsContext.fillRect( x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE );
+          }
+        }
+      }
+
+    } );
+
   }
 
 //===================================================================================================================================================  
@@ -316,10 +360,12 @@ public class Window extends Application
    * @param stage
    */
   @Override
-  public void start(Stage stage)
+  public void start ( Stage stage )
   {
     this.stage = stage;
-    initScene(stage);
+    imageList.add();
+    initScene( stage );
+
   }
 
 //===================================================================================================================================================
@@ -328,8 +374,8 @@ public class Window extends Application
    *
    * @param args Arguments passed by command line
    */
-  public static void startWindow(String[] args)
+  public static void startWindow ( String[] args )
   {
-    launch(args);
+    launch( args );
   }
 }
