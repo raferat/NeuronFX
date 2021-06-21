@@ -5,7 +5,6 @@ import javafx.application.Application;
 
 import javafx.collections.ObservableList;
 
-import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 
@@ -17,6 +16,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
@@ -121,9 +121,13 @@ public class Window extends Application
   private final Button buttonLoad = new Button( "Open" );
   private final Button buttonSave = new Button( "Save" );
   private final Button buttonAdd = new Button( "Add" );
-  private final Button buttonRemove = new Button( "Remove" );
+  private final Button buttonRemove = new Button( "Delete" );
 
   private final Label status = new Label( "1/1" );
+  
+  private final int GRAY_COLOR_COUNT = 5;
+  
+  private final Button[] grayButtonChoosers = new Button[GRAY_COLOR_COUNT];
 
 //===================================================================================================================================================
   /**
@@ -134,7 +138,7 @@ public class Window extends Application
    */
   private void initScene ( Stage stage )
   {
-    scene = new Scene( new VBox( initCanvas() , initToolbar() ) );
+    scene = new Scene( new HBox( 10d , initVBox(initCanvas() , initToolbar()) , initClolorPicker() ) );
     scene.setOnKeyPressed( this :: pressed );
     scene.getRoot().setStyle( "-fx-background-color: white" );
 
@@ -195,6 +199,12 @@ public class Window extends Application
 
     return canvas;
   }
+  
+  
+  private VBox initVBox (Node... nodes)
+  {
+    return new VBox(nodes);
+  }
 
   private void initButtons ()
   {
@@ -245,6 +255,33 @@ public class Window extends Application
       repaintEfficient();
     } );
   }
+  
+  private VBox initClolorPicker()
+  {
+    double gab = 10d;
+    double buttonWidth = 100d;
+    double buttonHeight = ( MATRIX_HEIGHT * CANVAS_SCALE + gab) / grayButtonChoosers.length ;
+    
+    for ( int i = 0 ; i < GRAY_COLOR_COUNT ; i ++ )
+    {
+      Canvas c = new Canvas((int)buttonHeight - 10, (int)buttonHeight - 10);
+      
+      Color col = Color.rgb( ( 255 / GRAY_COLOR_COUNT ) * i , ( 255 / GRAY_COLOR_COUNT ) * i , ( 255 / GRAY_COLOR_COUNT ) * i );
+      
+      c.getGraphicsContext2D().setFill( col );
+      c.getGraphicsContext2D().fillRect(0, 0, c.getWidth(), c.getHeight());
+      
+      Button b = new Button("" , c);
+      b.setPrefSize(buttonWidth , buttonHeight);
+      grayButtonChoosers[i] = b;
+    }
+    
+    VBox vBox = new VBox ( gab , grayButtonChoosers );
+    
+    
+    return vBox;
+  }
+  
 
 //===================================================================================================================================================  
   private void startPainting ( MouseEvent event )
