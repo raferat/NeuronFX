@@ -114,8 +114,8 @@ public class Window extends Application
   private Scene scene;
   private Stage stage;
 
-  private final Button buttonNext = new Button( "<" );
-  private final Button buttonBack = new Button( ">" );
+  private final Button buttonNext = new Button( ">" );
+  private final Button buttonBack = new Button( "<" );
 
   private final Button buttonErase = new Button( "Erase" );
   private final Button buttonLoad = new Button( "Open" );
@@ -142,13 +142,14 @@ public class Window extends Application
     stage.setResizable( false );
     stage.setScene( scene );
     stage.setTitle( "Neuron FX" );
+    updateLabel();
     stage.show();
   }
 
   private HBox initToolbar ()
   {
     initButtons();
-    HBox hBox = new HBox( 10d , buttonNext , status , buttonAdd , buttonRemove , buttonErase , buttonLoad , buttonSave , buttonBack );
+    HBox hBox = new HBox( 10d , buttonBack , status , buttonAdd , buttonRemove , buttonErase , buttonLoad , buttonSave , buttonNext );
     hBox.setAlignment( Pos.CENTER );
     ObservableList<Node> content = hBox.getChildren();
     double buttonWidth = ( canvas.getWidth() - hBox.getSpacing() * ( content.size() - 1 ) ) / content.size();
@@ -218,14 +219,14 @@ public class Window extends Application
 
     buttonSave.setOnAction( ( e ) ->
     {
-      imageList.save( "C://Temp/image.txt" );
+      imageList.save( "/tmp/image.json" );
       updateLabel();
       repaintEfficient();
     } );
 
     buttonLoad.setOnAction( ( e ) ->
     {
-      imageList.load( "C://Temp/image.txt" );
+      imageList.load( "/tmp/image.json" );
       updateLabel();
       repaintEfficient();
     } );
@@ -281,7 +282,7 @@ public class Window extends Application
 //------------------------------------------------------------------------------  
   private void updateLabel ()
   {
-    String s = String.format( "%d/%d" , imageList.position() , imageList.size() );
+    String s = String.format( "%d/%d" , imageList.position()+1 , imageList.size() );
 
     status.setText( s );
   }

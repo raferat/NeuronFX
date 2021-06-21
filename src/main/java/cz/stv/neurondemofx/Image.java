@@ -17,20 +17,33 @@ package cz.stv.neurondemofx;
 
 
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.Writer;
 
-
+import com.google.gson.*;
+import java.io.IOException;
 /**
  *
  * @author martin.vagner
  */
-public class Image
+public class Image implements Serializable
 {
-  private final byte[][] matrix;
+  
+  public int width, height;
+  
+  public byte[][] matrix;
   
   public Image(int width , int height)
   {
+    this.width = width;
+    this.height = height;
     matrix = new byte[width][height];    
+    
+  }
+  
+  public Image()
+  {
+    
   }
   
   public int getWidth()
@@ -46,9 +59,9 @@ public class Image
   
   public static Image load(Reader reader)
   {
-    int width = 0;
-    int height = 0;
-    Image image = new Image(width,height);
+    Gson g = new Gson();
+    
+    Image image = g.fromJson(reader , Image.class);
     return image;
   }
   
@@ -64,9 +77,11 @@ public class Image
     matrix[x][y] = value;
   }
   
-  public void save (Writer writer)
+  public void save (Writer writer) throws IOException
   {
-    
+    Gson g = new GsonBuilder().setPrettyPrinting().create();
+    writer.write(g.toJson(this, Image.class));
+    writer.flush();
   }
   
   public void draw(ImageDrawable imageDrawable)

@@ -17,7 +17,12 @@ package cz.stv.neurondemofx;
 
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class ImageList
@@ -63,6 +68,11 @@ public class ImageList
   public void add ()
   {
     Image image = new Image(imageWidth , imageHeight);
+    add(image);
+  }
+  
+  private void add (Image image)
+  {
     images.add( image );
     currentIndex = images.size()-1;
   }
@@ -73,34 +83,54 @@ public class ImageList
   }
   
   
-  public void save(String filePath)
+  public void save(File file)
   {
-    
+    try (FileWriter writer = new FileWriter(file))
+    {
+      if (! file.exists() )
+        file.createNewFile();
+      
+      current().save(writer);
+    }
+    catch (IOException ex)
+    {
+      ex.printStackTrace(System.err);
+    }
   }
   
-  public void save ( File file )
+  public void save ( String filePath )
   {
-    save(file.getAbsolutePath());
+    save(new File(filePath));
   }
   
   public void load(String filePath)
   {
-    
+    load(new File(filePath));
   }
   
   public void load ( File file )
   {
-    load(file.getAbsolutePath());
+    try(FileReader reader = new FileReader(file))
+    {
+      if ( file.exists() )
+      {
+        add(Image.load(reader));
+      }  
+    }
+    catch (IOException e)
+    {
+      e.printStackTrace(System.err);
+    }
   }
   
   public void back()
   {
-    currentIndex = currentIndex == 0 ? size()-1 : currentIndex - 1;
+    currentIndex = currentIndex == 0 ? size()-1 : currentIndex-1;
   }
   
   public void next()
   {
-    currentIndex = currentIndex == size()-1 ? 0 : currentIndex - 1;
+    currentIndex = currentIndex == size() -1 ? 0 : currentIndex +1;
   }
   
 }
