@@ -1,9 +1,13 @@
 package cz.stv.neurondemofx;
 
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import javafx.application.Application;
 
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -16,6 +20,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 import javafx.scene.input.KeyEvent;
@@ -42,19 +47,19 @@ public class Window extends Application
   /**
    * height of matrix
    */
-  private static final int MATRIX_HEIGHT = 60;
+  private static final int MATRIX_HEIGHT = 16;
 
   /**
    * width of matrix
    */
-  private static final int MATRIX_WIDTH = 60;
+  private static final int MATRIX_WIDTH = 16;
 
   /**
    * scale of canvas
    *
    * @see canvas
    */
-  private static final double CANVAS_SCALE = 10d;
+  private static final double CANVAS_SCALE = 50d;
 
   /**
    * width of canvas
@@ -122,13 +127,29 @@ public class Window extends Application
   private final Button buttonSave = new Button( "Save" );
   private final Button buttonAdd = new Button( "Add" );
   private final Button buttonRemove = new Button( "Delete" );
+  
+  private final Button buttonWhite; 
 
   private final Label status = new Label( "1/1" );
   
   private final int GRAY_COLOR_COUNT = 5;
   
-  private final Button[] grayButtonChoosers = new Button[GRAY_COLOR_COUNT];
+  private final ArrayList<Button> grayButtonChoosers = new ArrayList<>();
+  
+  private VBox colorPicker = new VBox();
 
+  
+  
+  
+  public Window()
+  {
+    InputStream ins = Window.class.getResourceAsStream("/Erase-clean.png");
+    Image img = new javafx.scene.image.Image(ins);
+    
+    buttonWhite = new Button("", new ImageView( img ));
+  }
+  
+  
 //===================================================================================================================================================
   /**
    * <code>initScene</code> is initializing the scene.
@@ -138,7 +159,7 @@ public class Window extends Application
    */
   private void initScene ( Stage stage )
   {
-    scene = new Scene( new HBox( 10d , initVBox(initCanvas() , initToolbar()) , initClolorPicker() ) );
+    scene = new Scene( new HBox( initVBox(initCanvas() , initToolbar()) , initClolorPicker() ) );
     scene.setOnKeyPressed( this :: pressed );
     scene.getRoot().setStyle( "-fx-background-color: white" );
 
@@ -146,7 +167,7 @@ public class Window extends Application
     stage.setResizable( false );
     stage.setScene( scene );
     stage.setTitle( "Neuron FX" );
-    updateLabel();
+    updateControls();
     stage.show();
   }
 
@@ -156,7 +177,7 @@ public class Window extends Application
     HBox hBox = new HBox( 10d , buttonBack , status , buttonAdd , buttonRemove , buttonErase , buttonLoad , buttonSave , buttonNext );
     hBox.setAlignment( Pos.CENTER );
     ObservableList<Node> content = hBox.getChildren();
-    double buttonWidth = ( canvas.getWidth() - hBox.getSpacing() * ( content.size() - 1 ) ) / content.size();
+    double buttonWidth = ( canvas.getWidth() - hBox.getSpacing() * ( content.size() -1 ) ) / content.size();
 
     for ( Node node : content )
     {
@@ -211,75 +232,150 @@ public class Window extends Application
     buttonErase.setOnAction( ( e ) ->
     {
       imageList.current().erase();
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
     buttonNext.setOnAction( ( e ) ->
     {
       imageList.next();
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
     buttonBack.setOnAction( ( e ) ->
     {
       imageList.back();
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
 
     buttonSave.setOnAction( ( e ) ->
     {
       imageList.save( "/tmp/image.json" );
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
 
     buttonLoad.setOnAction( ( e ) ->
     {
       imageList.load( "/tmp/image.json" );
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
 
     buttonAdd.setOnAction( ( e ) ->
     {
       imageList.add();
-      updateLabel();
+      updateControls();
       repaintEfficient();
     } );
 
     buttonRemove.setOnAction( ( e ) ->
     {
-      imageList.delete();
-      updateLabel();
-      repaintEfficient();
+      if ( imageList.position() != 0 )
+      {
+        imageList.delete();
+        if ( imageList.position() == imageList.size() )
+        {
+          imageList.back();
+        }
+        updateControls();
+        repaintEfficient();
+      }
     } );
   }
   
   private VBox initClolorPicker()
   {
+    grayButtonChoosers.add(buttonWhite);
+    
     double gab = 10d;
     double buttonWidth = 100d;
-    double buttonHeight = ( MATRIX_HEIGHT * CANVAS_SCALE + gab) / grayButtonChoosers.length ;
+    double buttonHeight = ( ( MATRIX_HEIGHT * CANVAS_SCALE + 50d ) - gab * (GRAY_COLOR_COUNT + grayButtonChoosers.size()-1 ) ) / ( GRAY_COLOR_COUNT + grayButtonChoosers.size() ) ;
+    
+    buttonWhite.setPrefSize(buttonWidth , buttonHeight);
+    buttonWhite.setMinSize(buttonWidth , buttonHeight);
+    buttonWhite.setMaxSize(buttonWidth , buttonHeight);
+    
+    ( (ImageView) buttonWhite.getGraphic()).setPreserveRatio(true);
+    ( (ImageView) buttonWhite.getGraphic()).setFitHeight(buttonHeight);
+    ( (ImageView) buttonWhite.getGraphic()).setFitWidth(buttonWidth);
+    
+    
+    buttonWhite.setOnAction(this::buttonClicked);
+    
+    
+    
     
     for ( int i = 0 ; i < GRAY_COLOR_COUNT ; i ++ )
     {
       Canvas c = new Canvas((int)buttonHeight - 10, (int)buttonHeight - 10);
       
-      Color col = Color.rgb( ( 255 / GRAY_COLOR_COUNT ) * i , ( 255 / GRAY_COLOR_COUNT ) * i , ( 255 / GRAY_COLOR_COUNT ) * i );
+      Color col = Color.rgb( ( 127 / GRAY_COLOR_COUNT ) * i , ( 127 / GRAY_COLOR_COUNT ) * i , ( 127 / GRAY_COLOR_COUNT ) * i );
       
       c.getGraphicsContext2D().setFill( col );
       c.getGraphicsContext2D().fillRect(0, 0, c.getWidth(), c.getHeight());
       
       Button b = new Button("" , c);
       b.setPrefSize(buttonWidth , buttonHeight);
-      grayButtonChoosers[i] = b;
+      b.setOnAction(this::buttonClicked);
+      grayButtonChoosers.add (b);
     }
     
-    VBox vBox = new VBox ( gab , grayButtonChoosers );
     
     
-    return vBox;
+    colorPicker = new VBox ( gab ,  grayButtonChoosers . toArray(new Button[grayButtonChoosers.size()]));
+    
+    
+    return colorPicker;
+  }
+  
+  private void updateColorPicker()
+  {
+    add();
+    
+    double gab = 10d;
+    double buttonWidth = 100d;
+    double buttonHeight = ( MATRIX_HEIGHT * CANVAS_SCALE + gab) / ( grayButtonChoosers.size() ) ;
+    
+    
+    for ( int i = 0 ; i < grayButtonChoosers.size() ; i ++ )
+    {
+      Canvas c = new Canvas((int)buttonHeight - 10, (int)buttonHeight - 10);
+      
+      Color col = Color.rgb( ( 127 / grayButtonChoosers.size() ) * i , ( 127 / grayButtonChoosers.size() ) * i , ( 127 / grayButtonChoosers.size() ) * i );
+      
+      c.getGraphicsContext2D().setFill( col );
+      c.getGraphicsContext2D().fillRect(0, 0, c.getWidth(), c.getHeight());
+      
+      Button b = new Button("" , c);
+      b.setPrefSize(buttonWidth , buttonHeight);
+      b.setOnAction(this::buttonClicked);
+      grayButtonChoosers.set(i , b);
+    }
+  }
+  
+  private void add()
+  {
+    double gab = 10d;
+    double buttonWidth = 100d;
+    double buttonHeight = ( MATRIX_HEIGHT * CANVAS_SCALE + gab) / ( grayButtonChoosers.size() + 1 ) ;
+    int newButtonIndex = grayButtonChoosers.size();
+    
+    Canvas c = new Canvas((int)buttonHeight - 10, (int)buttonHeight - 10);
+      
+    Color col = Color.rgb(( 127 / grayButtonChoosers.size()+1 ) * newButtonIndex , ( 127 / grayButtonChoosers.size()+1 ) * newButtonIndex , ( 127 / grayButtonChoosers.size()+1 ) * newButtonIndex );
+      
+    c.getGraphicsContext2D().setFill( col );
+    c.getGraphicsContext2D().fillRect(0, 0, c.getWidth(), c.getHeight());
+      
+    Button b = new Button("" , c);
+    b.setPrefSize(buttonWidth , buttonHeight);
+    b.setOnAction(this::buttonClicked);
+      
+    grayButtonChoosers . add (grayButtonChoosers.size()-2 , b); 
+    
+    colorPicker.getChildren().add(b);
+    
   }
   
 
@@ -317,10 +413,23 @@ public class Window extends Application
   }
 
 //------------------------------------------------------------------------------  
-  private void updateLabel ()
+  private void updateControls ()
+  {
+    updateLabel();
+    updateButtons();
+  }
+  
+  private void updateButtons()
+  {
+    buttonRemove . setDisable(imageList.size() == 1);
+    buttonBack . setDisable(imageList.position() == 0);
+    buttonNext . setDisable(imageList.position() == imageList.size()-1);
+    buttonAdd . setDisable(imageList.size() == 420);
+  }
+  
+  private void updateLabel()
   {
     String s = String.format( "%d/%d" , imageList.position()+1 , imageList.size() );
-
     status.setText( s );
   }
 
@@ -332,9 +441,19 @@ public class Window extends Application
     {
       imageList.current().erase();
       repaintEfficient();
-      updateLabel();
+      updateControls();
     }
 
+  }
+  
+  private void buttonClicked( ActionEvent e )
+  {
+    if ( e.getSource() instanceof Button ) 
+    {
+      Button b = (Button) e.getSource();
+      int index = grayButtonChoosers.indexOf(b);
+      currentColor = (byte) ((127 / grayButtonChoosers.size()) * index) ;
+    }
   }
 //===================================================================================================================================================
 
@@ -350,7 +469,7 @@ public class Window extends Application
         matrix[ xDraw ][ yDraw ] = currentColor;
         graphicsContext.setFill( Color.WHITE );
         graphicsContext.fillRect( 0 , 0 , MATRIX_WIDTH * CANVAS_SCALE , MATRIX_HEIGHT * CANVAS_SCALE );
-        graphicsContext.setFill( Color.BLACK );
+        
 
         for ( int x = 0 ; x < matrix.length ; x ++ )
         {
@@ -358,7 +477,7 @@ public class Window extends Application
           {
             if ( matrix[ x ][ y ] != 0 )
             {
-
+              graphicsContext.setFill( Color.rgb(matrix[x][y], matrix[x][y], matrix[x][y]) );
               graphicsContext.fillRect( x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE );
             }
           }
@@ -374,7 +493,6 @@ public class Window extends Application
     {
       graphicsContext.setFill( Color.WHITE );
       graphicsContext.fillRect( 0 , 0 , MATRIX_WIDTH * CANVAS_SCALE , MATRIX_HEIGHT * CANVAS_SCALE );
-      graphicsContext.setFill( Color.BLACK );
       
       for ( int x = 0 ; x < matrix.length ; x ++ )
       {
@@ -382,6 +500,7 @@ public class Window extends Application
         {
           if ( matrix[ x ][ y ] != 0 )
           {
+            graphicsContext.setFill( Color.rgb(matrix[x][y], matrix[x][y], matrix[x][y]) );
             graphicsContext.fillRect( x * CANVAS_SCALE , y * CANVAS_SCALE , CANVAS_SCALE , CANVAS_SCALE );
           }
         }
