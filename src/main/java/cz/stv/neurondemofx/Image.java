@@ -16,12 +16,12 @@
 package cz.stv.neurondemofx;
 
 
-import java.io.Reader;
 import java.io.Serializable;
-import java.io.Writer;
 
-import com.google.gson.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 /**
  *
  * @author martin.vagner
@@ -41,7 +41,7 @@ public class Image implements Serializable
     
   }
   
-  public Image()
+  public Image ( BufferedImage img )
   {
     
   }
@@ -59,10 +59,7 @@ public class Image implements Serializable
   
   public static Image load(Reader reader)
   {
-    Gson g = new Gson();
-    
-    Image image = g.fromJson(reader , Image.class);
-    return image;
+    return new Image(100 , 100);
   }
   
   public void erase ()
@@ -79,9 +76,7 @@ public class Image implements Serializable
   
   public void save (Writer writer) throws IOException
   {
-    Gson g = new GsonBuilder().setPrettyPrinting().create();
-    writer.write(g.toJson(this, Image.class));
-    writer.flush();
+    
   }
   
   public void draw(ImageDrawable imageDrawable)

@@ -520,8 +520,9 @@ public class Window extends Application
   public void start ( Stage stage )
   {
     this.stage = stage;
-    imageList.add();
-    initScene( stage );
+    //imageList.add();
+    //initScene( stage );
+    new TestingImages (stage );
 
   }
 
