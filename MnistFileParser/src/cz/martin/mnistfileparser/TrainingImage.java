@@ -7,6 +7,14 @@ public class TrainingImage
   private Image image;
   private int label;
 
+  public TrainingImage ( Image image , int label )
+  {
+    this.image = image;
+    this.label = label;
+  }
+
+  
+  
   public TrainingImage ( Image img )
   {
     image = img;
