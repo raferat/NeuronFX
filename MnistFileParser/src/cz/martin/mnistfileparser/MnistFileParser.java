@@ -27,7 +27,7 @@ public class MnistFileParser
 {
 
   private static final int bufferSize = 20;
-  private static int position = bufferSize / 2;
+  private static int listIndex = bufferSize / 2;
 
   private static int imgSize = 0;
 
@@ -43,19 +43,22 @@ public class MnistFileParser
   private static FileInputStream imgFis;
   private static FileInputStream labelFis;
 
+  private static int imgFilePosition = 16;
+  private static int labelFilePosition = 8;
+
   private synchronized static Image readNextImage ( FileInputStream fis , int size ) throws IOException
   {
-    if (fis.getChannel ().size () == fis.getChannel ().position ())
+    imgFilePosition += size * size * bufferSize / 2;
+    fis.getChannel ().position ( imgFilePosition );
+    if (fis.getChannel ().size () <= fis.getChannel ().position ())
     {
-      fis.getChannel ().position ( 8 );
+      fis.getChannel ().position ( 16 );
     }
     int scale = 12;
     BufferedImage img = new BufferedImage ( size * scale , size * scale , BufferedImage.TYPE_INT_RGB );
     Graphics2D g2d = img.createGraphics ();
-    byte[] read = new byte[size];
     for (int y = 0; y < size; y++)
     {
-      //fis.read ( read );
       for (int x = 0; x < size; x++)
       {
         int color = 255 - fis.read ();
@@ -64,15 +67,66 @@ public class MnistFileParser
       }
     }
 
+    imgFilePosition -= size * size * bufferSize / 2 - size * size;
+    imgFilePosition = imgFilePosition % (16 + size * size * 60_000);
+
+    return img;
+  }
+
+  private synchronized static Image readPreviousImage ( FileInputStream fis , int size ) throws IOException
+  {
+    imgFilePosition -= size * size * bufferSize / 2 + size * size;
+    if (imgFilePosition < 16)
+    {
+      imgFilePosition = 16 + size * size * 59_999;
+      //imgFilePosition -= size*size*bufferSize/2;
+    }
+    fis.getChannel ().position ( imgFilePosition );
+    if (fis.getChannel ().size () <= fis.getChannel ().position ())
+    {
+      fis.getChannel ().position ( 16 + size * size * 60_000 - size * size );
+    }
+    int scale = 12;
+    BufferedImage img = new BufferedImage ( size * scale , size * scale , BufferedImage.TYPE_INT_RGB );
+    Graphics2D g2d = img.createGraphics ();
+    for (int y = 0; y < size; y++)
+    {
+      for (int x = 0; x < size; x++)
+      {
+        int color = 255 - fis.read ();
+        g2d.setColor ( new Color ( color , color , color ) );
+        g2d.fillRect ( x * scale , y * scale , 1 * scale , 1 * scale );
+      }
+    }
+    System.out.println ( imgFilePosition );
+    imgFilePosition += size * size * bufferSize / 2 - size * size;
+    if (imgFilePosition > 16 + size * size * 60_000)
+    {
+      imgFilePosition = 16;
+    }
+
     return img;
   }
 
   private synchronized static int readNextLabel ( FileInputStream fis ) throws IOException
   {
+    labelFilePosition += bufferSize / 2;
     if (fis.getChannel ().size () == fis.getChannel ().position ())
     {
       fis.getChannel ().position ( 8 );
     }
+    labelFilePosition -= bufferSize / 2 + 1;
+    return fis.read ();
+  }
+
+  private synchronized static int readPreviousLabel ( FileInputStream fis ) throws IOException
+  {
+    labelFilePosition -= bufferSize / 2;
+    if (fis.getChannel ().size () == fis.getChannel ().position ())
+    {
+      fis.getChannel ().position ( 8 );
+    }
+    labelFilePosition += bufferSize / 2 - 1;
     return fis.read ();
   }
 
@@ -147,6 +201,17 @@ public class MnistFileParser
     }
   }
 
+  private static void tester ()
+  {
+    System.out.println ( "Started" );
+    for (int i = 0; i < 60_100; i++)
+    {
+      System.out.println ( "Index: " + i );
+      frame.dispatchEvent ( new KeyEvent ( frame , KeyEvent.KEY_PRESSED , System.nanoTime () , 0 , KeyEvent.VK_PAGE_UP ) );
+    }
+    System.out.println ( "Ended" );
+  }
+
   public static void main ( String[] args )
   {
     label.setFont ( new Font ( Font.SERIF , Font.BOLD , 40 ) );
@@ -173,6 +238,8 @@ public class MnistFileParser
       frame.setVisible ( true );
     } );
 
+    Thread t = new Thread (MnistFileParser::tester);
+    
     frame.addKeyListener ( new KeyAdapter ()
     {
       @Override
@@ -182,12 +249,12 @@ public class MnistFileParser
         {
           try
           {
-            position ++;
+            listIndex++;
             updatePosition ();
             trainingImages.remove ( 0 );
-            
+
             trainingImages.addLast ( new TrainingImage ( readNextImage ( imgFis , imgSize ) , readNextLabel ( labelFis ) ) );
-            position --;
+            listIndex--;
 
           }
           catch (IOException ex)
@@ -199,19 +266,22 @@ public class MnistFileParser
         {
           try
           {
-            position --;
+            listIndex--;
             updatePosition ();
             trainingImages.removeLast ();
-            imgFis.getChannel ().position ( imgFis.getChannel ().position () - (imgSize * imgSize * 2) >= 800 ? imgFis.getChannel ().position () - (imgSize * imgSize * 2) : imgFis.getChannel ().size () - imgSize * imgSize );
-            labelFis.getChannel ().position ( labelFis.getChannel ().position () - 2 >= 9 ? labelFis.getChannel ().position () - 2 : labelFis.getChannel ().size () - 1 );
-            trainingImages.addFirst ( new TrainingImage ( readNextImage ( imgFis , imgSize ) , readNextLabel ( labelFis ) ) );
-            position ++;
+            trainingImages.addFirst ( new TrainingImage ( readPreviousImage ( imgFis , imgSize ) , readPreviousLabel ( labelFis ) ) );
+            listIndex++;
 
           }
           catch (IOException ex)
           {
             ex.printStackTrace ();
           }
+        }
+        else if (e.getKeyCode () == KeyEvent.VK_S)
+        {
+          if (! t . isAlive () )
+            t.start ();
         }
       }
 
@@ -239,11 +309,11 @@ public class MnistFileParser
 
   private static void updatePosition ()
   {
-    frame.setMinimumSize ( new Dimension ( trainingImages.get ( 0 ).getImage ().getWidth ( frame.getRootPane () ) , trainingImages.get ( 0 ).getImage ().getHeight ( frame.getRootPane () ) * 3 ) );
-    frame.setSize ( new Dimension ( trainingImages.get ( 0 ).getImage ().getWidth ( frame.getRootPane () ) , trainingImages.get ( 0 ).getImage ().getHeight ( frame.getRootPane () ) * 3 ) );
+    frame.setMinimumSize ( new Dimension ( trainingImages.get ( 0 ).getImage ().getWidth ( frame.getRootPane () ) , trainingImages.get ( 0 ).getImage ().getHeight ( frame.getRootPane () ) * 2 ) );
+    frame.setSize ( new Dimension ( trainingImages.get ( 0 ).getImage ().getWidth ( frame.getRootPane () ) , trainingImages.get ( 0 ).getImage ().getHeight ( frame.getRootPane () ) * 2 ) );
     frame.setResizable ( false );
-    icon.setIcon ( new ImageIcon ( trainingImages.get ( position ).getImage () ) );
-    label.setText ( trainingImages.get ( position ).getLabel () + "" );
+    icon.setIcon ( new ImageIcon ( trainingImages.get ( listIndex ).getImage () ) );
+    label.setText ( trainingImages.get ( listIndex ).getLabel () + "" );
   }
 
 }
